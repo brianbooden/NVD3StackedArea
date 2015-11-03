@@ -12420,7 +12420,6 @@ nv.models.stackedAreaChart = function() {
         selection.each(function(data) {
             var container = d3.select(this),
                 that = this;
-			console.log(container);
             nv.utils.initSVG(container);
 
             var availableWidth = nv.utils.availableWidth(width, container, margin),
