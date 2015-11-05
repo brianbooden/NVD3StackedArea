@@ -1,5 +1,5 @@
-define(["jquery", "./d3.min", "css!./nv.d3.min.css","./nv.d3.min","./senseUtils"], 
-function($, d3, cssContent, nvd3) {
+define(["jquery", "./d3.min", "css!./nv.d3.min.css", "./nv.d3.min"], 
+function($) {
 	'use strict';
 	
 	return {
