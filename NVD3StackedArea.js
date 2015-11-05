@@ -1,6 +1,7 @@
-define(["jquery", "./d3.min", "text!./nv.d3.min.css","./nv.d3.min","./senseUtils"], function($, cssContent) {'use strict';
-	$("<style>").html(cssContent).appendTo("head");
-
+define(["jquery", "./d3.min", "css!./nv.d3.min.css","./nv.d3.min","./senseUtils"], 
+function($, cssContent) {
+	'use strict';
+	
 	return {
 		initialProperties: {
 			qHyperCubeDef: {
@@ -81,7 +82,7 @@ function drawStreamChart($element, layout, fullMatrix, self) {
 			}
 			else {
 				// if it hasn't been created, create it with the appropriate id and size
-				$element.append($('<div />').attr({ "id": id, "class": "qv-object-qv-object-NVD3StackedArea" }).css({ height: height, width: width }))
+				$element.append($('<div />').attr({ "id": id, "class": "qv-object-nvd3-stacked-area" }).css({ height: height, width: width }))
 			}
 			
 			viz(self, data, measureLabels, width, height, id, selections, layout, $element);
@@ -90,18 +91,34 @@ function drawStreamChart($element, layout, fullMatrix, self) {
 			
 var viz = function (self, data, labels, width, height, id, selections, layout, $element) {
 
-		
-	var json = getJSONtoHyperCube(layout, data, labels, selections);
-
+	// get key elements in Qlik Sense order
+	var listKey = [],
+		dateKey = [],
+		dateVal = 0;
+	$.each(data, function( index, row ) {
+		if ($.inArray(row[0].qText, listKey) === -1) {
+			listKey.push(row[0].qText);
+		}
+		dateVal = convertToUnixTime(row[1].qNum);
+		if ($.inArray(dateVal, dateKey) === -1) {
+			dateKey.push(dateVal);
+		}
+	});
+	var dataNVD3 = data.map(function(row){
+					return {"key" : row[0].qText, "x" : convertToUnixTime(row[1].qNum), "y" : row[2].qNum};
+				});
+	// Transform data set
+	dataNVD3 = d3.nest()
+				.key(function(d) { return d.key; }).sortKeys(function(a,b) { return listKey.indexOf(a) - listKey.indexOf(b); })
+				.entries(dataNVD3)
+				.map(function(k){
+					return {"key": k.key, "values": k.values.map(function(v){return [v.x,v.y]})}
+				});
+				
+	// need values for all dates for all keys
+	dataNVD3 = assignDefaultValues(dateKey, dataNVD3, 0);
+	
     var colors = d3.scale.category20();
-
-	//var JSONarray = JSON.stringify(histcatexplong);
-	//var JSONarray2 = JSON.stringify(json);
-	
-	
-	//console.log(histcatexplong);
-	//console.log(json);
-	
 	
 	// Chart object width  
    var width = $element.width();  
@@ -109,20 +126,7 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
    var height = $element.height();  
    // Chart object id  
    var id = "container_" + layout.qInfo.qId;  
-   // Check to see if the chart element has already been created  
-   if (document.getElementById(id)) {  
-		// if it has been created, empty its contents so we can redraw it  
-		 $("#" + id).empty();  
-   }  
-   else {
-		// if it hasn't been created, create it with the appropriate id and size
-		$element.append($('<div />').attr({ "id": id, "class": "qv-object-NVD3StackedArea" }).css({ height: height, width: width }))
-	}
-   
-   //var svg = d3.select("#" + id).append("svg")  
-	//	.attr("width", width)  
-	//	.attr("height", height);
-	
+ 	
 	// Set the margins of the object
 	var margin = {top: 20, right: 10, bottom: 50, left: 50},
 		width = width - margin.left - margin.right,
@@ -130,9 +134,9 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 	
 	// Create the svg element	
 	var svg = d3.select("#"+id)
-		.append("svg:svg")
-			.attr("width", width + margin.left + margin.right)
-			.attr("height", height + margin.top + margin.bottom);
+		.append("svg:svg");
+			// .attr("width", width)
+			// .attr("height", height);
 		
 	
     var chart;
@@ -140,18 +144,18 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 
 	nv.addGraph(function() {
 		chart = nv.models.stackedAreaChart()
-                  //.margin({right: 100})
+                  .margin({right: 40})
                   .x(function(d) { return d[0] })   //We can modify the data accessor functions...
                   .y(function(d) { return d[1] })   //...in case your data is formatted differently.
                   .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
                   .rightAlignYAxis(false)      //Let's move the y-axis to the right side.
                   .duration(100)
-                  .showControls(false)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
+                  .showControls(true)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
                   .clipEdge(true)
 				  .pointActive(function(d) { return d.notActive })
 				  .interpolate('cardinal-open')
 				  .style('stream')
-				  .showLegend(false)
+				  .showLegend(true)
 				  .color(colorrange);
 
         chart.xAxis.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
@@ -162,7 +166,7 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 		var selfNew = self;
 		
         d3.select('#'+id+' svg')
-            .datum(json)
+            .datum(dataNVD3)
             .transition().duration(0)
             .call(chart)
             .each('start', function() {
@@ -177,115 +181,57 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
         nv.utils.windowResize(chart.update);
         return chart;
     });
-
-		  
 		  
 }
 
-
-
-function getJSONtoHyperCube(layout, data2, labels, selections) {
-
-	//console.log(data2);
-
-	// get qMatrix data array
-	//var qMatrix = layout.qHyperCube.qDataPages[0].qMatrix;
-	var qMatrix = data2;
-
-	//console.log(qMatrix);
-	
-	// create a new array that contains the measure labels
-	var dimensions = layout.qHyperCube.qDimensionInfo;			
-	var LegendTitle = dimensions[0].qFallbackTitle;			
-	
-	// create a new array that contains the dimensions and metric values
-	// depending on whether if 1 or 2 dimensions are being used
-	if(dimensions.length==2){			 
-		var dim1Labels = qMatrix.map(function(d) {
-			 return d[0].qText;
-		 });
-		 var dim1Id = qMatrix.map(function(d) {
-			 return d[0].qElemNumber;
-		 });
-		 var dim2Labels = qMatrix.map(function(d) {
-			 return d[1].qNum;
-		 });
-		 var dim2Id = qMatrix.map(function(d) {
-			 return d[1].qElemNumber;
-		 });
-		 var metric1Values = qMatrix.map(function(d) {
-				 return d[2].qNum;
-		 }) ;	 
-	}
-	else{				
-		var dim1Labels = qMatrix.map(function(d) {
-			 return d[0].qText;
-		 });				 
-		 var dim1Id = qMatrix.map(function(d) {
-			 return d[0].qElemNumber;
-		 });
-		 var dim2Labels = dim1Labels;
-		 var dim2Id = dim1Id;
-		 var metric1Values = qMatrix.map(function(d) {
-			 return d[1].qNum;
-		 });				 		 
-	} 
-	
-	// create a JSON array that contains dimensions and metric values
-	var data = [];
-	var actClassName = "";
-	var myJson = {};
-	myJson.dim_id = ""; 
-	myJson.dim = ""; 
-	myJson.values = [];
-	var cont = 0;
-	var contdata = 0;
-	var LegendValues = [];								
-	if(dimensions.length==2){
-		for(var k=0;k<dim1Labels.length;k++){				
-			if(actClassName!=dim1Labels[k] ){
-				if(cont!=0){
-					data[contdata] = myJson;
-					contdata++;				
-				}
-				// it is a different grouping value of Dim1
-				LegendValues.push(dim1Labels[k]);
-				var myJson = {};
-				myJson.key = "";
-				myJson.values = [];							
-				cont = 0;
-				myJson.key = dim1Labels[k];	
-					// Make sure radar_area_name is added for usage in the radar chart layers later
-					myJson.values[cont]  = [dim2Labels[k], metric1Values[k]];
-					cont++;		
-					// Make sure radar_area_name is added for usage in the radar chart layers later
-			}else{						
-					myJson.values[cont]  = [dim2Labels[k], metric1Values[k]];
-					cont++;
-			}												
-			actClassName =  dim1Labels[k];						
-		}
-		data[contdata] = myJson;			
-	}else{
-		for(var k=0;k<dim1Labels.length;k++){									
-			// it is a different grouping value of Dim1
-			LegendValues.push(dim1Labels[k]);	
-					// Make sure radar_area_name is added for usage in the radar chart layers later
-					myJson.values[cont]  = [dim2Labels[k], metric1Values[k]];
-					cont++;
-		}	
-		data[contdata] = myJson;
-	}
-	
-	//console.log('data = ', data);
-	return data;
-	
-	
-}
 
 function MakeQSSelection(keyfield) {
 
 console.log(self);
 
+}
 
+
+function dateFromQlikNumber(n) {
+	var d = new Date((n - 25569)*86400*1000);
+	// since date was created in UTC shift it to the local timezone
+	d.setTime( d.getTime() + d.getTimezoneOffset()*60*1000 );
+	return d;
+}
+
+function convertToUnixTime(_qNum) {
+	return dateFromQlikNumber(_qNum).getTime();
+}
+
+function findDate(_date, _arr, _offset) {
+	for (var i = _offset, len = _arr.length; i < len; i++) {
+		if (_arr[i][0] === _date) return i;
+	}
+	return -1;
+}
+
+function assignDefaultValues(dates, dataset, defaultValue) {
+	var newData = [],
+		sortDates = function(a,b){ return a > b ? 1 : -1; },
+		sortValues = function(a,b){ return a[0] > b[0] ? 1 : -1; },
+		i = -1;
+		
+	dates.sort(sortDates);
+	$.each(dataset, function(index1, setObject){
+		var newValues = [],
+			lastPos = 0,
+			i = -1;
+		setObject.values.sort(sortValues);
+		$.each(dates, function(index2, theDate){
+			i = findDate(theDate, setObject.values, lastPos)
+			if (i === -1) {
+				newValues.push([theDate,defaultValue]);
+			} else {
+				newValues.push([theDate,setObject.values[i][1]]);
+				lastPos = i;
+			}
+		});
+		newData.push( { key: setObject.key, seriesIndex: setObject.seriesIndex, values: newValues });
+	});
+	return newData;
 }
