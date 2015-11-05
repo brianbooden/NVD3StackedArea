@@ -1,5 +1,5 @@
 define(["jquery", "./d3.min", "css!./nv.d3.min.css","./nv.d3.min","./senseUtils"], 
-function($, cssContent) {
+function($, d3, cssContent, nvd3) {
 	'use strict';
 	
 	return {
@@ -9,7 +9,7 @@ function($, cssContent) {
 				qMeasures: [],
 				qInitialDataFetch: [{
 					qWidth: 3,
-					qHeight: 100
+					qHeight: 3333
 				}]
 			}
 		},
@@ -41,7 +41,8 @@ function($, cssContent) {
 		paint: function ($element, layout) {
 		
 			// Call SenseUtils to page the data for > 10000 points
-			senseUtils.pageExtensionData(this, $element, layout, drawStreamChart, self);
+			//senseUtils.pageExtensionData(this, $element, layout, drawStreamChart, self);
+			drawStreamChart($element, layout, layout.qHyperCube.qDataPages[0].qMatrix, self);
 			
 		}
 	};
@@ -53,7 +54,7 @@ function drawStreamChart($element, layout, fullMatrix, self) {
 			//var qMatrix = layout.qHyperCube.qDataPages[0].qMatrix;
 			//create matrix variable
 			var qMatrix = fullMatrix;
-			
+console.log(qMatrix);			
 			// create a new array that contains the measure labels
 			var measureLabels = layout.qHyperCube.qMeasureInfo.map(function(d) {
 				return d.qFallbackTitle;
@@ -76,14 +77,14 @@ function drawStreamChart($element, layout, fullMatrix, self) {
 			var id = "container_" + layout.qInfo.qId;
 		    		 
 			// Check to see if the chart element has already been created
-			if (document.getElementById(id)) {
-				// if it has been created, empty it's contents so we can redraw it
-				$("#" + id).empty();
-			}
-			else {
+			// if (document.getElementById(id)) {
+				// // if it has been created, empty it's contents so we can redraw it
+				// $("#" + id).empty();
+			// }
+			// else {
 				// if it hasn't been created, create it with the appropriate id and size
-				$element.append($('<div />').attr({ "id": id, "class": "qv-object-nvd3-stacked-area" }).css({ height: height, width: width }))
-			}
+				$element.empty().append($('<div />').attr({ "id": id, "class": "qv-object-nvd3-stacked-area" }).css({ height: height, width: width }));
+			// }
 			
 			viz(self, data, measureLabels, width, height, id, selections, layout, $element);
 	
@@ -104,6 +105,7 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 			dateKey.push(dateVal);
 		}
 	});
+console.log(listKey);	
 	var dataNVD3 = data.map(function(row){
 					return {"key" : row[0].qText, "x" : convertToUnixTime(row[1].qNum), "y" : row[2].qNum};
 				});
@@ -120,13 +122,6 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 	
     var colors = d3.scale.category20();
 	
-	// Chart object width  
-   var width = $element.width();  
-   // Chart object height  
-   var height = $element.height();  
-   // Chart object id  
-   var id = "container_" + layout.qInfo.qId;  
- 	
 	// Set the margins of the object
 	var margin = {top: 20, right: 10, bottom: 50, left: 50},
 		width = width - margin.left - margin.right,
@@ -178,7 +173,7 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
                 }, 0)
             });
 
-        nv.utils.windowResize(chart.update);
+        //nv.utils.windowResize(chart.update);
         return chart;
     });
 		  
