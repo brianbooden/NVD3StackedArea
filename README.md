@@ -22,3 +22,10 @@ An example (Demostream.qvf) is included.
 Future improvements:
 1. Selections from inside the NVD3 Chart or Legend do not filter back through to Sense.
 2. Support for 10k points
+
+![Qlik Sense Extension Stream Graph](Qlik Sense Stream Chart - Properties.gif)
+Accessing Stream Chart Properties
+
+![Qlik Sense Extension Stream Graph](Qlik Sense Fixed Stream Chart Extension - Selections.gif)
+Making Selections with the Stream Chart
+
