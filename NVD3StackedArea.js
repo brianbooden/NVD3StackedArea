@@ -60,10 +60,10 @@ function($) {
 								  options: 
 									[ {
 										value: "#fff7bc, #fee391, #fec44f, #fe9929, #ec7014, #cc4c02, #993404, #662506",
-										label: "Sequencial"
+										label: "Sequential"
 									}, {
 										value: "#662506, #993404, #cc4c02, #ec7014, #fe9929, #fec44f, #fee391, #fff7bc",
-										label: "Sequencial (Reverse)"
+										label: "Sequential (Reverse)"
 									}, {
 										value: "#d73027, #f46d43, #fdae61, #fee090, #e0f3f8, #abd9e9, #74add1, #4575b4",
 										label: "Diverging RdYlBu"
