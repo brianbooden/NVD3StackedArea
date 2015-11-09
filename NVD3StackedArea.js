@@ -30,6 +30,110 @@ function($) {
 				sorting: {
 					uses: "sorting"
 				},
+				settings : {
+					uses : "settings",
+					items : {
+						chartType: {
+							ref: "chartType",
+							type: "string",
+							component: "dropdown",
+							label: "Chart Type",
+							options: 
+								[ {
+									value: "stack",
+									label: "Stacked"
+								}, {
+									value: "stream",
+									label: "Stream"
+								}, {
+									value: "expand",
+									label: "Expanded"
+								}
+								],
+							defaultValue: "stream"
+						},
+						colors: {
+								  ref: "ColorSchema",
+								  type: "string",
+								  component: "dropdown",
+								  label: "Color and Legend",
+								  options: 
+									[ {
+										value: "#fff7bc, #fee391, #fec44f, #fe9929, #ec7014, #cc4c02, #993404, #662506",
+										label: "Sequencial"
+									}, {
+										value: "#662506, #993404, #cc4c02, #ec7014, #fe9929, #fec44f, #fee391, #fff7bc",
+										label: "Sequencial (Reverse)"
+									}, {
+										value: "#d73027, #f46d43, #fdae61, #fee090, #e0f3f8, #abd9e9, #74add1, #4575b4",
+										label: "Diverging RdYlBu"
+									}, {
+										value: "#4575b4, #74add1, #abd9e9, #e0f3f8, #fee090, #fdae61, #f46d43, #d73027",
+										label: "Diverging BuYlRd (Reverse)"
+									}, {
+										value: "#deebf7, #c6dbef, #9ecae1, #6baed6, #4292c6, #2171b5, #08519c, #08306b",
+										label: "Blues"
+									}, {
+										value: "#fee0d2, #fcbba1, #fc9272, #fb6a4a, #ef3b2c, #cb181d, #a50f15, #67000d",
+										label: "Reds"
+									}, {
+										value: "#edf8b1, #c7e9b4, #7fcdbb, #41b6c4, #1d91c0, #225ea8, #253494, #081d58",
+										label: "YlGnBu"
+									}
+								],
+									defaultValue: "#fff7bc, #fee391, #fec44f, #fe9929, #ec7014, #cc4c02, #993404, #662506"
+								},
+						showLegend:{
+							type: "boolean",
+							component: "switch",
+							translation: "Show Legend",
+							ref: "showLegend",
+							defaultValue: true,
+							trueOption: {
+							  value: true,
+							  translation: "properties.on"
+							},
+							falseOption: {
+							  value: false,
+							  translation: "properties.off"
+							},
+							show: true
+						  },
+						  showControls:{
+							type: "boolean",
+							component: "switch",
+							translation: "Show Controls",
+							ref: "showControls",
+							defaultValue: true,
+							trueOption: {
+							  value: true,
+							  translation: "properties.on"
+							},
+							falseOption: {
+							  value: false,
+							  translation: "properties.off"
+							},
+							show: true
+						  },
+						  showInteractiveGuideline:{
+							type: "boolean",
+							component: "switch",
+							translation: "Interactive Guideline",
+							ref: "showInteractiveGuideline",
+							defaultValue: true,
+							trueOption: {
+							  value: true,
+							  translation: "properties.on"
+							},
+							falseOption: {
+							  value: false,
+							  translation: "properties.off"
+							},
+							show: true
+						  },
+						
+						}
+				}
 			}
 		},
 		snapshot: {
@@ -39,6 +143,7 @@ function($) {
 		
 	
 		paint: function ($element, layout) {
+		
 		
 			// Call SenseUtils to page the data for > 10000 points
 			//senseUtils.pageExtensionData(this, $element, layout, drawStreamChart, self);
@@ -54,7 +159,9 @@ function drawStreamChart($element, layout, fullMatrix, self) {
 			//var qMatrix = layout.qHyperCube.qDataPages[0].qMatrix;
 			//create matrix variable
 			var qMatrix = fullMatrix;
-console.log(qMatrix);			
+		
+			//console.log(qMatrix);
+		
 			// create a new array that contains the measure labels
 			var measureLabels = layout.qHyperCube.qMeasureInfo.map(function(d) {
 				return d.qFallbackTitle;
@@ -92,6 +199,13 @@ console.log(qMatrix);
 			
 var viz = function (self, data, labels, width, height, id, selections, layout, $element) {
 
+	// Get the properties
+	var chartType = layout.chartType,
+		colorSchema = layout.ColorSchema.split(", "),
+		showLegend = layout.showLegend,
+		showControls = layout.showControls,
+		showInteractiveGuideline = layout.showInteractiveGuideline;
+
 	// get key elements in Qlik Sense order
 	var listKey = [],
 		dateKey = [],
@@ -105,7 +219,7 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 			dateKey.push(dateVal);
 		}
 	});
-console.log(listKey);	
+
 	var dataNVD3 = data.map(function(row){
 					return {"key" : row[0].qText, "x" : convertToUnixTime(row[1].qNum), "y" : row[2].qNum};
 				});
@@ -135,23 +249,22 @@ console.log(listKey);
 		
 	
     var chart;
-	var colorrange = ["#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
-
+	
 	nv.addGraph(function() {
 		chart = nv.models.stackedAreaChart()
                   .margin({right: 40})
                   .x(function(d) { return d[0] })   //We can modify the data accessor functions...
                   .y(function(d) { return d[1] })   //...in case your data is formatted differently.
-                  .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
+                  .useInteractiveGuideline(showInteractiveGuideline)    //Tooltips which show all data points. Very nice!
                   .rightAlignYAxis(false)      //Let's move the y-axis to the right side.
                   .duration(100)
-                  .showControls(true)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
+                  .showControls(showControls)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
                   .clipEdge(true)
-				  .pointActive(function(d) { return d.notActive })
+				  //.pointActive(function(d) { return d.notActive })
 				  .interpolate('cardinal-open')
-				  .style('stream')
-				  .showLegend(true)
-				  .color(colorrange);
+				  .style(chartType)
+				  .showLegend(showLegend)
+				  .color(colorSchema);
 
         chart.xAxis.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
         chart.yAxis.tickFormat(d3.format(',.2f'));
@@ -195,6 +308,7 @@ function dateFromQlikNumber(n) {
 }
 
 function convertToUnixTime(_qNum) {
+	console.log(_qNum);
 	return dateFromQlikNumber(_qNum).getTime();
 }
 
