@@ -1,4 +1,4 @@
-define(["jquery", "./d3.v3.min", "css!./nv.d3.min.css", "./nv.d3"], 
+define(["jquery", "./d3.v3.min", "css!./nv.d3.min.css"], 
 function($) {
 	'use strict';
 	
