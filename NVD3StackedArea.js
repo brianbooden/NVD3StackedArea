@@ -49,6 +49,18 @@ function($) {
 									value: "expand",
 									label: "Expanded"
 								}
+								, {
+									value: "zoomedline",
+									label: "Zoomed Line"
+								}
+								, {
+									value: "stackedbar",
+									label: "Stacked Bar"
+								}
+								, {
+									value: "groupedbar",
+									label: "Grouped Bar"
+								}
 								],
 							defaultValue: "stream"
 						},
@@ -250,8 +262,14 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 	
     var chart;
 	
+	
 	nv.addGraph(function() {
-		chart = nv.models.stackedAreaChart()
+		
+		
+		// Use the Stacked area chart if stream, stack or expand
+		if(chartType == 'stream' || chartType == 'stack' || chartType == 'expand')
+		{
+			chart = nv.models.stackedAreaChart()
                   .margin({right: 40})
                   .x(function(d) { return d[0] })   //We can modify the data accessor functions...
                   .y(function(d) { return d[1] })   //...in case your data is formatted differently.
@@ -264,11 +282,71 @@ var viz = function (self, data, labels, width, height, id, selections, layout, $
 				  .interpolate('cardinal-open')
 				  .style(chartType)
 				  .showLegend(showLegend)
-				  .color(colorSchema);
+				  .color(colorSchema)
+				  //.rotateLabels(-30)      //Angle to rotate x-axis labels.
+					;
+				  
+			chart.xAxis
+				.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
+				
+			chart.yAxis
+				.tickFormat(d3.format(',.2f'));
+		}
+		
+		// Create the zoomed line chart if zoomedline
+		else if (chartType == 'zoomedline')
+		{
+			chart = nv.models.lineWithFocusChart()
+				.margin({right: 40})
+                .x(function(d) { return d[0] })   //We can modify the data accessor functions...
+                .y(function(d) { return d[1] })   //...in case your data is formatted differently.
+				.useInteractiveGuideline(showInteractiveGuideline)    //Tooltips which show all data points. Very nice!
+                .duration(100)
+                .clipEdge(true)
+				//.pointActive(function(d) { return d.notActive })
+				.interpolate('cardinal-open')
+				.showLegend(showLegend)
+				.color(colorSchema)
+				//.rotateLabels(-30)      //Angle to rotate x-axis labels.
+				;
 
-        chart.xAxis.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
-        chart.yAxis.tickFormat(d3.format(',.2f'));
+				chart.yAxis
+				.tickFormat(d3.format(',.2f'));
 
+				chart.y2Axis
+				.tickFormat(d3.format(',.2f'));
+
+				chart.xAxis
+				.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
+
+				chart.x2Axis
+				.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
+		}		
+		
+		// Otherwise 'stackedbar' or 'groupedbar'
+		else
+		{
+		
+			chart = nv.models.multiBarChart()
+			  .margin({right: 40})
+              .x(function(d) { return d[0] })   //We can modify the data accessor functions...
+              .y(function(d) { return d[1] })   //...in case your data is formatted differently.
+			  .duration(350)
+			  .reduceXTicks(true)   //If 'false', every single x-axis tick label will be rendered.
+			  .rotateLabels(-30)      //Angle to rotate x-axis labels.
+			  .showControls(true)   //Allow user to switch between 'Grouped' and 'Stacked' mode.
+			  .groupSpacing(0.5)    //Distance between each group of bars.
+			  .stacked(chartType == 'stackedbar' ? true : false)
+			;
+
+			chart.xAxis
+				.tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
+				
+			chart.yAxis
+				.tickFormat(d3.format(',.2f'));
+		
+		}
+		
         chart.legend.vers('furious');
 
 		var selfNew = self;
